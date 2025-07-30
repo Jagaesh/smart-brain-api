@@ -37,7 +37,7 @@ app.post('/signin', (req, res) => {
   const { email, password } = req.body;
   const user = database.users.find(user => user.email === email && user.password === password);
   if (user) {
-    res.json('success');
+    res.json(user);
   } else {
     res.status(401).json('error logging in');
   }
@@ -45,17 +45,16 @@ app.post('/signin', (req, res) => {
 
 app.post('/register', (req, res) => {
   const { name, email, password } = req.body;
-  database.users.push(
-    {
-      id: '125',
-      name: name,
-      email: email,
-      password: password,
-      entries: 0,
-      joined: new Date()
-    }
-  );
-  res.json(database.users[database.users.length - 1]);
+  const user = {
+    id: '125',
+    name: name,
+    email: email,
+    password: password,
+    entries: 0,
+    joined: new Date()
+  }
+  database.users.push(user);
+  res.json(user);
 })
 
 app.get('/profile/:id', (req, res) => {
@@ -68,8 +67,8 @@ app.get('/profile/:id', (req, res) => {
   }
 })
 
-app.put('/image/:id', (req, res) => {
-  const { id } = req.params
+app.put('/image', (req, res) => {
+  const { id } = req.body
   const user = database.users.find(user => user.id === id);
   if (user) {
     user.entries++;
