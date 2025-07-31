@@ -1,6 +1,18 @@
 import express from 'express';
-import bcrypt from 'bcrypt-nodejs';
 import cors from 'cors';
+import bcrypt from 'bcrypt-nodejs';
+import knex from 'knex';
+
+const db = knex({
+  client: 'pg',
+  connection: {
+    host: '127.0.0.1',
+    port: 5432,
+    user: 'jagaesh',
+    password: 'test',
+    database: 'smart-brain'
+  }
+});
 
 const app = express();
 
@@ -8,89 +20,98 @@ app.use(cors());
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 
-const database = {
-  users: [
-    {
-      id: '123',
-      name: 'John',
-      email: 'john@gmail.com',
-      password: 'cookies',
-      entries: 0,
-      joined: new Date()
-    },
-    {
-      id: '124',
-      name: 'Sally',
-      email: 'sally@gmail.com',
-      password: 'bananas',
-      entries: 0,
-      joined: new Date()
-    },
-  ]
-}
-
 app.get('/', (req, res) => {
-  res.send(database.users);
+  db('users')
+    .select('*')
+    .then(users => {
+      res.json(users);
+    })
+    .catch(err => {
+      res.status(404).json('unable to register')
+    });
 })
 
 app.post('/signin', (req, res) => {
   const { email, password } = req.body;
-  const user = database.users.find(user => user.email === email && user.password === password);
-  if (user) {
-    res.json(user);
-  } else {
-    res.status(401).json('error logging in');
-  }
+  db('login')
+    .select('hash')
+    .where({ email })
+    .then(hash => {
+      if (!hash.length || !bcrypt.compareSync(password, hash[0].hash)) {
+        return res.status(400).json('invalid email or password');
+      }
+      return db('users')
+        .select('*')
+        .where({ email })
+        .then(user => {
+          res.json(user[0])
+        })
+        .catch(err => {
+          res.status(404).json('unable to get user')
+        })
+    })
+    .catch(err => {
+      res.status(500).json('internal server error')
+    })
 })
 
 app.post('/register', (req, res) => {
   const { name, email, password } = req.body;
-  const user = {
-    id: '125',
-    name: name,
-    email: email,
-    password: password,
-    entries: 0,
-    joined: new Date()
-  }
-  database.users.push(user);
-  res.json(user);
+  const hash = bcrypt.hashSync(password);
+
+  db.transaction(trx => {
+    return trx('login')
+      .insert({
+        hash: hash,
+        email: email
+      })
+      .returning('email')
+      .then(loginEmail => {
+        return trx('users')
+          .insert({
+            name,
+            email: loginEmail[0].email,
+            joined: new Date()
+          })
+          .returning('*');
+      })
+  })
+    .then(user => {
+      res.json(user[0])
+    })
+    .catch(err => {
+      res.status(400).json('unable to register')
+    });
 })
 
 app.get('/profile/:id', (req, res) => {
-  const { id } = req.params
-  const user = database.users.find(user => user.id === id);
-  if (user) {
-    res.json(user);
-  } else {
-    res.status(404).json('user not found');
-  }
+  const { id } = req.params;
+  db('users')
+    .select('*').where({ id })
+    .then(user => {
+      user.length
+        ? res.json(user[0])
+        : res.status(404).json('error getting user')
+    })
+    .catch(err =>
+      res.status(500).json('internal server error')
+    )
 })
 
 app.put('/image', (req, res) => {
-  const { id } = req.body
-  const user = database.users.find(user => user.id === id);
-  if (user) {
-    user.entries++;
-    res.json(user.entries);
-  } else {
-    res.status(404).json('user not found');
-  }
+  const { id } = req.body;
+  db('users')
+    .where({ id })
+    .increment('entries', 1)
+    .returning('*')
+    .then(entries => {
+      res.json(entries[0].entries)
+    })
+    .catch(err =>
+      res.status(404).json('unable to get entries count')
+    )
 })
 
 app.listen(3000, () => {
   console.log('app is running on port 3000');
 })
-
-
-// bcrypt.hash("bacon", null, null, function (err, hash) {
-//   // Store hash in your password DB.
-// });
-
-// // Load hash from your password DB.
-// bcrypt.compare("bacon", hash, function (err, res) {
-//   // res == true
-// });
-// bcrypt.compare("veggies", hash, function (err, res) {
-//   // res = false
-// });
