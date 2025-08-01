@@ -8,7 +8,23 @@ import handleImage from './controllers/image.js';
 
 const app = express();
 
-app.use(cors());
+const allowedOrigins = [
+  'http://localhost:5173',
+  'https://jagaesh.github.io',
+];
+
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  methods: ['GET', 'POST', 'PUT'],
+}));
+
+
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 
