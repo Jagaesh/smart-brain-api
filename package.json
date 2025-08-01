@@ -1,7 +1,7 @@
 {
   "name": "smartbrain-node",
   "version": "1.0.0",
-  "main": "script.js",
+  "main": "server.js",
   "type": "module",
   "scripts": {
     "start": "node server.js"

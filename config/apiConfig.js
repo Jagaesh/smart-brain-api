@@ -1,5 +1,5 @@
 export const CLARIFAI = {
-  PAT: 'dd8d4919a3c048f68411e5d7d2f0ef09',
+  PAT: process.env.CLARIFAI_API_KEY,
   USER_ID: 'jagaesh',
   APP_ID: 'smartbrain-face-detection',
   MODEL_ID: 'face-detection',
