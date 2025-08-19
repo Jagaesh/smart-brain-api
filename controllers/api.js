@@ -7,7 +7,10 @@ const handleApiCall = (req, res) => {
 
   fetch(clarifaiUrl, requestOptions)
     .then(response => response.json())
-    .then(data => res.json(data))
+    .then(data => {
+      const regions = data?.outputs?.[0]?.data?.regions || [];
+      res.json(regions);
+    })
     .catch(err => res.status(400).json('Unable to work with Clarifai API'));
 }
 
