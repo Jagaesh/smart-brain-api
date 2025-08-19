@@ -9,6 +9,8 @@ import handleImage from './controllers/image.js';
 
 const app = express();
 
+const PORT = process.env.PORT || 3000;
+
 const allowedOrigins = [
   'http://localhost:5173',
   'https://jagaesh.github.io',
@@ -39,6 +41,6 @@ app.get('/profile/:id', handleProfile);
 app.post('/api', handleApiCall);
 app.put('/image', handleImage);
 
-app.listen(3000, () => {
-  console.log('app is running on port 3000');
+app.listen(PORT, () => {
+  console.log(`app is running on port ${PORT}`);
 });
